@@ -1,0 +1,301 @@
+package com.anshu;
+
+import java.text.DateFormat;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
+
+public class Test {
+	
+	private static DateFormat dateFormat = new SimpleDateFormat("EEE HH:mm");
+	private static DateFormat dayFormat = new SimpleDateFormat("E");
+	private static Calendar calendar = Calendar.getInstance();
+
+	private static DecimalFormat decimalFormat = new DecimalFormat("#.00");
+
+	public static void main(String[] args) {
+
+		Calendar cal = Calendar.getInstance();
+		cal.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY);
+
+		int year = 2018;
+		int week = 32;
+
+		List<String> stations = new ArrayList<String>();
+		stations.add("MLA");
+		stations.add("LK1");
+
+		List<StationStatusModel> data = null;
+
+		if (cal.get(Calendar.YEAR) == year && cal.get(Calendar.WEEK_OF_YEAR) - 1 == week) {
+			System.out.println("Current Week Data.");
+			data = new ArrayList<StationStatusModel>();
+
+			for (String station : stations) {
+				data.add(prepareWeekDataForCurrentWeek(year, week, station));
+			}
+
+			for (StationStatusModel m : data) {
+				System.out.println(m.toString());
+			}
+		} else {
+			System.out.println("Another Week Data.");
+			data = new ArrayList<StationStatusModel>();
+
+			for (String station : stations) {
+				data.add(prepareWeekDataForAnotherWeek(year, week, station));
+			}
+
+			for (StationStatusModel m : data) {
+				System.out.println(m.toString());
+			}
+		}
+
+	}
+
+	public static StationStatusModel prepareWeekDataForCurrentWeek(int year, int week, String stationName) {
+		StationStatusModel status = new StationStatusModel();
+
+		try {
+
+			int target = 35;
+			int finished = 30;
+
+			Map<String, String> shiftTime = new HashMap<String, String>();
+			shiftTime.put("Mon", "Mon 06:00,Mon 22:00");
+			shiftTime.put("Tue", "Tue 06:00,Tue 22:00");
+			shiftTime.put("Wed", "Wed 06:00,Wed 22:00");
+			shiftTime.put("Thu", "Thu 06:00,Thu 22:00");
+			shiftTime.put("Fri", "Fri 06:00,Fri 22:00");
+			shiftTime.put("Sat", "Sat 06:00,Sat 22:00");
+			shiftTime.put("Sun", "Sun 06:00,Sun 22:00");
+
+			Map<String, Integer> totalShiftH = getTotalShiftHours(shiftTime);
+			float totalTargetTime = getTotalTargetTime(totalShiftH);
+
+			if (totalShiftH.get(dayFormat.format(calendar.getTime())) == 0) {
+				System.out.println("There is no shift today.");
+
+				float unitTime = totalTargetTime / target;
+				System.out.println("Unit time : " + unitTime);
+				float totalSpentTime = convertFloatToTime(Float.parseFloat(decimalFormat.format((finished * unitTime))));
+
+				float hoursAheadOrBehind = convertFloatToTime(
+						Float.parseFloat(decimalFormat.format((totalSpentTime - totalTargetTime))));
+
+				int units = (int) Math.ceil(hoursAheadOrBehind / unitTime);
+
+				System.out.println("Target Time : " + totalTargetTime);
+				System.out.println("Total Spent Time : " + totalSpentTime);
+				System.out.println("Hours ahead or behind : " + hoursAheadOrBehind);
+				System.out.println("Units : " + units);
+
+				status.setYear(year);
+				status.setWeek(week);
+				status.setStationName(stationName);
+				status.setTarget(target);
+				status.setFinished(finished);
+				status.setTargetTime(totalTargetTime);
+				status.setSpentTime(totalSpentTime);
+				status.setHoursAheadOrBehind(hoursAheadOrBehind);
+				status.setUnits(units);
+
+			} else {
+				System.out.println("Total target time : " + totalTargetTime);
+
+				float unitTime = totalTargetTime / target;
+				float totalSpentTime = convertFloatToTime(Float.parseFloat(decimalFormat.format((finished * unitTime))));
+
+				System.out.println("Unit time : " + unitTime);
+				System.out.println("Total Spent time : " + totalSpentTime);
+
+				float timeElapsedToday = getTotalTimeElapsed(totalShiftH,
+						shiftTime.get(dayFormat.format(calendar.getTime())));
+				System.out.println("Total time passed : " + timeElapsedToday);
+
+				System.out.println("Convert ... : " + Float.parseFloat(decimalFormat.format((totalSpentTime - timeElapsedToday))));
+
+				float timeUnitAheadOrBehind = convertFloatToTime(
+						Float.parseFloat(decimalFormat.format((totalSpentTime - timeElapsedToday))));
+
+				System.out.println("Time unit ahead or behind : " + timeUnitAheadOrBehind);
+
+				int units = (int) Math.ceil(timeUnitAheadOrBehind / unitTime);
+
+				System.out.println("Units : " + units);
+
+				status.setYear(year);
+				status.setWeek(week);
+				status.setStationName(stationName);
+				status.setTarget(target);
+				status.setFinished(finished);
+				status.setTargetTime(totalTargetTime);
+				status.setSpentTime(totalSpentTime);
+				status.setHoursAheadOrBehind(timeUnitAheadOrBehind);
+				status.setUnits(units);
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return status;
+	}
+
+	public static StationStatusModel prepareWeekDataForAnotherWeek(int year, int week, String stationName) {
+		StationStatusModel status = new StationStatusModel();
+
+		try {
+
+			int target = 35;
+			int finished = 30;
+
+			Map<String, String> shiftTime = new HashMap<String, String>();
+			shiftTime.put("Mon", "Mon 06:00,Mon 22:00");
+			shiftTime.put("Tue", "Tue 06:00,Tue 22:00");
+			shiftTime.put("Wed", "Wed 06:00,Wed 22:00");
+			shiftTime.put("Thu", "Thu 06:00,Thu 22:00");
+			shiftTime.put("Fri", "Fri 06:00,Fri 22:00");
+			shiftTime.put("Sat", "Sat 06:00,Sat 22:00");
+			shiftTime.put("Sun", "Sun 06:00,Sun 22:00");
+
+			Map<String, Integer> totalShiftH = getTotalShiftHours(shiftTime);
+			float totalTargetTime = getTotalTargetTime(totalShiftH);
+
+			float unitTime = totalTargetTime / target;
+			System.out.println("Unit time : " + unitTime);
+			float totalSpentTime = convertFloatToTime(Float.parseFloat(decimalFormat.format((finished * unitTime))));
+
+			float hoursAheadOrBehind = convertFloatToTime(
+					Float.parseFloat(decimalFormat.format((totalSpentTime - totalTargetTime))));
+
+			int units = (int) Math.ceil(hoursAheadOrBehind / unitTime);
+
+			System.out.println("Target Time : " + totalTargetTime);
+			System.out.println("Total Spent Time : " + totalSpentTime);
+			System.out.println("Hours ahead or behind : " + hoursAheadOrBehind);
+			System.out.println("Units : " + units);
+
+			status.setYear(year);
+			status.setWeek(week);
+			status.setStationName(stationName);
+			status.setTarget(target);
+			status.setFinished(finished);
+			status.setTargetTime(totalTargetTime);
+			status.setSpentTime(totalSpentTime);
+			status.setHoursAheadOrBehind(hoursAheadOrBehind);
+			status.setUnits(units);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return status;
+	}
+
+	public static float convertFloatToTime(float value) {
+		float newTime = value;
+		String time = String.valueOf(value).replace("-", "").replace(".", ":");
+
+		int hour = Integer.parseInt(time.split(":")[0]);
+		int min = Integer.parseInt(time.split(":")[1]);
+
+		if (min > 60) {
+			hour = hour + 1;
+			int rem = min - 60;
+			if (value < 0) {
+				newTime = -Float.parseFloat(hour + "." + rem);
+			} else {
+				newTime = Float.parseFloat(hour + "." + rem);
+			}
+		}
+
+		return newTime;
+	}
+
+	public static float getTotalTimeElapsed(Map<String, Integer> shiftTimes, String shift) throws Exception {
+
+		float time = 0;
+
+		for (Entry<String, Integer> sh : shiftTimes.entrySet()) {
+			if (sh.getKey().equals(dayFormat.format(calendar.getTime()))) {
+				break;
+			}
+			time = time + sh.getValue().intValue();
+		}
+
+		Date date11 = dateFormat.parse(shift.split(",")[0]);
+		Date date22 = dateFormat.parse(shift.split(",")[1]);
+		long hours = getDurationInHours(date11, date22);
+
+		Date date1 = dateFormat.parse(shift.split(",")[0]);
+		Date date2 = dateFormat.parse(
+				dayFormat.format(calendar.getTime()) + " " + calendar.getTime().getHours() + ":" + calendar.getTime().getMinutes());
+
+		long hours2 = getDurationInHours(date1, date2);
+		long min = getDurationInMin(date1, date2);
+
+		float time2 = Float.parseFloat(hours2 + "." + min);
+
+		System.out.println(hours2 + " : " + min + " > " + decimalFormat.format(time2));
+
+		time = time + time2;
+
+		return time;
+	}
+
+	public static int getTotalTargetTime(Map<String, Integer> totalShiftHours) throws Exception {
+
+		int total = 0;
+		for (Entry<String, Integer> tt : totalShiftHours.entrySet()) {
+			total = total + tt.getValue().intValue();
+		}
+
+		return total;
+	}
+
+	public static Map<String, Integer> getTotalShiftHours(Map<String, String> shiftTime) throws Exception {
+		Map<String, Integer> totalShiftHours = new HashMap<String, Integer>();
+		for (Entry<String, String> shift : shiftTime.entrySet()) {
+			String[] arr = shift.getValue().split(",");
+			if (arr.length == 2) {
+				if (arr[0] != null && arr[1] != null) {
+					Date date1 = dateFormat.parse(arr[0]);
+					Date date2 = dateFormat.parse(arr[1]);
+					totalShiftHours.put(shift.getKey(), (int) getDurationInHours(date1, date2));
+				} else {
+					totalShiftHours.put(shift.getKey(), 0);
+				}
+			} else {
+				totalShiftHours.put(shift.getKey(), 0);
+			}
+		}
+		return totalShiftHours;
+	}
+
+	public static long getDurationInHours(Date returnTime, Date leaveTime) {
+		long durationInMillis = leaveTime.getTime() - returnTime.getTime();
+		long seconds = durationInMillis / 1000;
+		long hours = seconds / (60 * 60);
+		return hours;
+	}
+
+	public static long getDurationInMin(Date returnTime, Date leaveTime) {
+		long durationInMillis = leaveTime.getTime() - returnTime.getTime();
+		long seconds = durationInMillis / 1000;
+		long hours = seconds / (60 * 60);
+		// long min = (durationInMillis / (60 * 1000) % 60);
+		long min = TimeUnit.MILLISECONDS.toMinutes(durationInMillis) % 60;
+
+		return min;
+	}
+
+}
