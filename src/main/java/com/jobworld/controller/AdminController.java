@@ -9,7 +9,7 @@ public class AdminController {
 	
 	@RequestMapping(value = "/admin/dashboard", method = RequestMethod.GET)
 	public String loginPage() {
-		System.out.
+		System.out.println("Admin Controller.");
 		return "admin/dashboard";
 	}
 }
