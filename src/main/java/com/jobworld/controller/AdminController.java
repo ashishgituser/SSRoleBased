@@ -9,6 +9,7 @@ public class AdminController {
 	
 	@RequestMapping(value = "/admin/dashboard", method = RequestMethod.GET)
 	public String loginPage() {
+		System.out.
 		return "admin/dashboard";
 	}
 }
